@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, BadgeCheck, LoaderCircle, ShieldCheck } from 'lucide-react';
 import type Keycloak from 'keycloak-js';
-import { apiBase, type Vehicle } from './api';
+import { apiBase, demoMode, type Vehicle } from './api';
 
 interface CheckoutProps {
   vehicle: Vehicle;
@@ -77,8 +77,8 @@ export function Checkout({ vehicle, auth, onLogin }: CheckoutProps) {
       {term && <p className="finance-estimate">Estimated payment about ${((price * (0.079 / 12) * (1 + 0.079 / 12) ** Number(term)) / ((1 + 0.079 / 12) ** Number(term) - 1)).toLocaleString('en-US', { maximumFractionDigits: 2 })} / month</p>}
       <label className="terms-acceptance"><input type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} /><span>I agree to the generated purchase agreement and financing disclosures.</span></label>
       {message && <p className="inline-message inline-message--error" role="alert">{message}</p>}
-      {result ? <div className="purchase-confirmation" role="status"><BadgeCheck size={22} /><div><strong>Purchase recorded</strong><span>Contract {result.contractNumber} · Invoice {result.invoiceNumber} · ${Number(result.amount).toLocaleString('en-US')}</span></div></div> : <button className="button button--primary button--wide" onClick={() => void purchase()} disabled={busy || !acceptedTerms}>
-          {busy ? <LoaderCircle className="spin" size={17} /> : auth.authenticated ? <>Confirm vehicle purchase <ArrowRight size={17} /></> : <>Sign in to continue <ArrowRight size={17} /> </>}
+        {result ? <div className="purchase-confirmation" role="status"><BadgeCheck size={22} /><div><strong>Purchase recorded</strong><span>Contract {result.contractNumber} · Invoice {result.invoiceNumber} · ${Number(result.amount).toLocaleString('en-US')}</span></div></div> : <button className="button button--primary button--wide" onClick={() => void purchase()} disabled={demoMode || busy || !acceptedTerms}>
+          {busy ? <LoaderCircle className="spin" size={17} /> : demoMode ? 'Purchases unavailable in preview' : auth.authenticated ? <>Confirm vehicle purchase <ArrowRight size={17} /></> : <>Sign in to continue <ArrowRight size={17} /> </>}
       </button>}
       <p className="secure-note"><ShieldCheck size={14} /> Purchase, invoice, and ledger entry are committed together.</p>
     </section>

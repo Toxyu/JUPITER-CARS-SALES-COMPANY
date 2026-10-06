@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, CalendarDays, Check, LoaderCircle, ShieldCheck } from 'lucide-react';
 import type Keycloak from 'keycloak-js';
-import { apiBase, checkAvailability, type Vehicle } from './api';
+import { apiBase, checkAvailability, demoMode, type Vehicle } from './api';
 
 interface RentalBookingProps {
   vehicle: Vehicle;
@@ -23,7 +23,7 @@ export function RentalBooking({ vehicle, auth, onLogin }: RentalBookingProps) {
   const afterFourDays = dateString(new Date(Date.now() + 4 * 86_400_000));
   const [startDate, setStartDate] = useState(tomorrow);
   const [endDate, setEndDate] = useState(afterFourDays);
-  const [availability, setAvailability] = useState<'checking' | 'available' | 'reserved' | 'confirmed' | 'error'>('checking');
+  const [availability, setAvailability] = useState<'checking' | 'available' | 'reserved' | 'confirmed' | 'error' | 'preview'>('checking');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const days = dayCount(startDate, endDate);
@@ -33,6 +33,10 @@ export function RentalBooking({ vehicle, auth, onLogin }: RentalBookingProps) {
     const controller = new AbortController();
     setAvailability('checking');
     setMessage('');
+    if (demoMode) {
+      setAvailability('preview');
+      return () => controller.abort();
+    }
     if (!startDate || !endDate || endDate <= startDate || days > 90) {
       setAvailability('error');
       return () => controller.abort();
@@ -77,7 +81,7 @@ export function RentalBooking({ vehicle, auth, onLogin }: RentalBookingProps) {
     }
   }
 
-  const statusText = availability === 'checking' ? 'Checking dates…' : availability === 'available' ? 'Dates available' : availability === 'confirmed' ? 'Reservation confirmed' : availability === 'reserved' ? 'Already reserved for these dates' : 'Choose a valid date range';
+  const statusText = availability === 'preview' ? 'Live availability unavailable' : availability === 'checking' ? 'Checking dates…' : availability === 'available' ? 'Dates available' : availability === 'confirmed' ? 'Reservation confirmed' : availability === 'reserved' ? 'Already reserved for these dates' : 'Choose a valid date range';
   return (
     <section className="booking-panel" aria-labelledby="booking-title">
       <div className="booking-panel__heading">
@@ -91,9 +95,9 @@ export function RentalBooking({ vehicle, auth, onLogin }: RentalBookingProps) {
       </div>
       <div className="booking-total"><div><span>Estimated total</span><small>{days} {days === 1 ? 'day' : 'days'} · before applicable taxes and fees</small></div><strong>${estimate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
       {message && <p className={`inline-message${availability === 'reserved' ? ' inline-message--error' : ''}`} role="status">{message}</p>}
-      <button className="button button--primary button--wide" onClick={() => void reserve()} disabled={busy || availability !== 'available'}>
-        {busy ? <LoaderCircle className="spin" size={17} /> : auth.authenticated ? <><Check size={17} /> Confirm reservation</> : <>Sign in to reserve <ArrowRight size={17} /></>}
-      </button>
+        <button className="button button--primary button--wide" onClick={() => void reserve()} disabled={demoMode || busy || availability !== 'available'}>
+          {busy ? <LoaderCircle className="spin" size={17} /> : demoMode ? 'Reservations unavailable in preview' : auth.authenticated ? <><Check size={17} /> Confirm reservation</> : <>Sign in to reserve <ArrowRight size={17} /> </>}
+        </button>
       <p className="secure-note"><ShieldCheck size={14} /> Your dates are protected against double-booking.</p>
     </section>
   );

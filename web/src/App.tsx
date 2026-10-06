@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowRight, CarFront, Check, ChevronDown, CircleUserRound, Menu, Search, SlidersHorizontal, X } from 'lucide-react';
 import type { Purpose, Vehicle } from './api';
-import { searchVehicles } from './api';
+import { demoMode, searchVehicles } from './api';
 import { AdminDashboard } from './AdminDashboard';
 import { Checkout } from './Checkout';
 import { keycloak, authInitialization } from './auth';
@@ -26,7 +26,7 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const isAdmin = Boolean(keycloak.tokenParsed?.realm_access?.roles?.includes('admin'));
+  const isAdmin = !demoMode && Boolean(keycloak.tokenParsed?.realm_access?.roles?.includes('admin'));
 
   useEffect(() => {
     let mounted = true;
@@ -91,10 +91,11 @@ export default function App() {
           {isAdmin && <button className={view === 'admin' ? 'nav-link nav-link--active' : 'nav-link'} onClick={() => setView('admin')}>Operations</button>}
         </nav>
         <div className="header-actions">
-          {authReady && (keycloak.authenticated ? <button className="button button--quiet" onClick={signOut}><CircleUserRound size={17} /><span>Sign out</span></button> : <button className="button button--outline" onClick={signIn}><CircleUserRound size={17} /><span>Sign in</span></button>)}
+          {demoMode ? <span className="preview-badge">SHOWROOM PREVIEW</span> : authReady && (keycloak.authenticated ? <button className="button button--quiet" onClick={signOut}><CircleUserRound size={17} /><span>Sign out</span></button> : <button className="button button--outline" onClick={signIn}><CircleUserRound size={17} /><span>Sign in</span></button>)}
           <button className="mobile-menu" aria-label="Open navigation" onClick={() => setView('inventory')}><Menu /></button>
         </div>
       </header>
+      {demoMode && <aside className="preview-banner" role="status">Sample inventory preview. Sign-in, live availability, reservations, and purchases are disabled until backend services are connected.</aside>}
 
       {view === 'admin' && isAdmin ? <main className="page-content"><AdminDashboard auth={keycloak} /></main> : <>
         <main id="top">

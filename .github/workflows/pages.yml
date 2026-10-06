@@ -36,9 +36,11 @@ jobs:
           VITE_KEYCLOAK_REALM: jupiter
           VITE_KEYCLOAK_CLIENT_ID: jupiter-web
         run: |
-          if [[ -z "$VITE_API_BASE_URL" || -z "$VITE_KEYCLOAK_URL" ]]; then
-            echo 'Set JUPITER_PUBLIC_API_URL and JUPITER_PUBLIC_KEYCLOAK_URL in repository Actions variables.' >&2
-            exit 1
+          if [[ -n "$VITE_API_BASE_URL" && -n "$VITE_KEYCLOAK_URL" ]]; then
+            export VITE_DEMO_MODE=false
+          else
+            export VITE_DEMO_MODE=true
+            echo 'Deploying browse-only preview. Set JUPITER_PUBLIC_API_URL and JUPITER_PUBLIC_KEYCLOAK_URL to enable live services.'
           fi
           npm ci
           npm run build
