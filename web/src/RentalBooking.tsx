@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, CalendarDays, Check, LoaderCircle, ShieldCheck } from 'lucide-react';
 import type Keycloak from 'keycloak-js';
-import { apiBase, checkAvailability, demoMode, type Vehicle } from './api';
+import { apiBase, checkAvailability, demoMode, formatKES, type Vehicle } from './api';
 
 interface RentalBookingProps {
   vehicle: Vehicle;
@@ -71,7 +71,7 @@ export function RentalBooking({ vehicle, auth, onLogin }: RentalBookingProps) {
       });
       const result = await response.json() as { reservationId?: string; totalAmount?: string; error?: string };
       if (!response.ok) throw new Error(result.error ?? 'Reservation could not be completed.');
-      setMessage(`Reservation confirmed. Reference ${result.reservationId?.slice(0, 8).toUpperCase()} · $${result.totalAmount}`);
+      setMessage(`Reservation confirmed. Reference ${result.reservationId?.slice(0, 8).toUpperCase()} · ${formatKES(Number(result.totalAmount))}`);
       setAvailability('confirmed');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Reservation could not be completed.');
@@ -88,12 +88,12 @@ export function RentalBooking({ vehicle, auth, onLogin }: RentalBookingProps) {
         <div><span className="section-kicker"><CalendarDays size={14} /> YOUR RENTAL</span><h2 id="booking-title">Plan the drive.</h2></div>
         <div className={`availability availability--${availability}`} role="status"><span />{statusText}</div>
       </div>
-      <div className="booking-panel__vehicle"><img src={vehicle.imageUrl ?? ''} alt="" /><div><strong>{vehicle.year} {vehicle.make} {vehicle.model}</strong><span>${vehicle.dailyRate} per day</span></div></div>
+      <div className="booking-panel__vehicle"><img src={vehicle.imageUrl ?? ''} alt="" /><div><strong>{vehicle.year} {vehicle.make} {vehicle.model}</strong><span>{formatKES(Number(vehicle.dailyRate ?? 0))} per day</span></div></div>
       <div className="date-fields">
         <label>Pickup date<input type="date" min={today} value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
         <label>Return date<input type="date" min={startDate || today} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
       </div>
-      <div className="booking-total"><div><span>Estimated total</span><small>{days} {days === 1 ? 'day' : 'days'} · before applicable taxes and fees</small></div><strong>${estimate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+      <div className="booking-total"><div><span>Estimated total · KES</span><small>{days} {days === 1 ? 'day' : 'days'} · before applicable taxes and fees</small></div><strong>{formatKES(estimate)}</strong></div>
       {message && <p className={`inline-message${availability === 'reserved' ? ' inline-message--error' : ''}`} role="status">{message}</p>}
         <button className="button button--primary button--wide" onClick={() => void reserve()} disabled={demoMode || busy || availability !== 'available'}>
           {busy ? <LoaderCircle className="spin" size={17} /> : demoMode ? 'Reservations unavailable in preview' : auth.authenticated ? <><Check size={17} /> Confirm reservation</> : <>Sign in to reserve <ArrowRight size={17} /> </>}

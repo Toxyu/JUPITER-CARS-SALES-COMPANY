@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseSearchRejectsInvalidRangesAndTypes(t *testing.T) {
-	for _, raw := range []string{"minPrice=80&maxPrice=20", "type=spaceship", "minPrice=-1", "q=" + string(make([]byte, 81))} {
+	for _, raw := range []string{"minPrice=80000000&maxPrice=20", "type=spaceship", "minPrice=-1", "q=" + string(make([]byte, 81))} {
 		t.Run(raw, func(t *testing.T) {
 			values, err := url.ParseQuery(raw)
 			if err != nil {
@@ -30,5 +30,16 @@ func TestSearchCacheKeyNormalizesQuery(t *testing.T) {
 	}
 	if first.key() != second.key() {
 		t.Fatalf("expected case-insensitive cache keys, got %q and %q", first.key(), second.key())
+	}
+}
+
+func TestParseSearchAcceptsKenyanMarketPriceRange(t *testing.T) {
+	values := url.Values{"purpose": {"sale"}, "minPrice": {"1100000"}, "maxPrice": {"4000000"}}
+	filters, err := parseSearch(values)
+	if err != nil {
+		t.Fatalf("expected KES price range to parse, got %v", err)
+	}
+	if filters.minPrice == nil || *filters.minPrice != 1_100_000 {
+		t.Fatalf("unexpected KES minimum price: %#v", filters.minPrice)
 	}
 }

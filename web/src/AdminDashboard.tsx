@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Activity, CarFront, CircleDollarSign, RefreshCw, TicketCheck } from 'lucide-react';
 import type Keycloak from 'keycloak-js';
-import { apiBase } from './api';
+import { apiBase, formatKES } from './api';
 
 interface Summary {
   vehicles: number;
@@ -39,7 +39,7 @@ export function AdminDashboard({ auth }: AdminDashboardProps) {
         <article className="metric-card"><span>Fleet vehicles</span><CarFront /><strong>{summary.vehicles}</strong><small>{summary.available} available now</small></article>
         <article className="metric-card"><span>Active reservations</span><TicketCheck /><strong>{summary.reservations}</strong><small>Confirmed bookings</small></article>
         <article className="metric-card"><span>Completed sales</span><Activity /><strong>{summary.sales}</strong><small>Recorded in ledger</small></article>
-        <article className="metric-card"><span>Sales revenue</span><CircleDollarSign /><strong>${Number(summary.salesRevenue).toLocaleString('en-US')}</strong><small>Before taxes and fees</small></article>
+        <article className="metric-card"><span>Sales revenue · KES</span><CircleDollarSign /><strong>{formatKES(Number(summary.salesRevenue))}</strong><small>Before taxes and fees</small></article>
       </div>}
     </section>
   );

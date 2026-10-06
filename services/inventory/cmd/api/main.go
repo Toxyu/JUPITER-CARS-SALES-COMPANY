@@ -22,17 +22,19 @@ import (
 const cacheTTL = 10 * time.Minute
 
 type Vehicle struct {
-	ID          string  `json:"id"`
-	VIN         string  `json:"vin"`
-	Make        string  `json:"make"`
-	Model       string  `json:"model"`
-	ModelYear   int     `json:"year"`
-	VehicleType string  `json:"type"`
-	SalePrice   *string `json:"salePrice"`
-	DailyRate   *string `json:"dailyRate"`
-	Status      string  `json:"status"`
-	ImageURL    *string `json:"imageUrl"`
-	Description string  `json:"description"`
+	ID          string   `json:"id"`
+	VIN         string   `json:"vin"`
+	Make        string   `json:"make"`
+	Model       string   `json:"model"`
+	ModelYear   int      `json:"year"`
+	VehicleType string   `json:"type"`
+	SalePrice   *string  `json:"salePrice"`
+	DailyRate   *string  `json:"dailyRate"`
+	Status      string   `json:"status"`
+	ImageURL    *string  `json:"imageUrl"`
+	Images      []string `json:"images"`
+	VideoURL    *string  `json:"videoUrl,omitempty"`
+	Description string   `json:"description"`
 }
 
 type server struct {
@@ -91,7 +93,7 @@ func (s *server) searchVehicles(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"items": vehicles})
 		return
 	}
-	query := `SELECT id, vin, make, model, model_year, vehicle_type, sale_price::text, daily_rate::text, status, image_url, description
+	query := `SELECT id, vin, make, model, model_year, vehicle_type, sale_price::text, daily_rate::text, status, image_url, description, image_urls, video_url
 		FROM vehicles WHERE status = 'available'
 		AND ($1 = '' OR make ILIKE '%' || $1 || '%' OR model ILIKE '%' || $1 || '%' OR vin ILIKE '%' || $1 || '%')
 		AND ($2 = '' OR vehicle_type = $2)
@@ -108,7 +110,7 @@ func (s *server) searchVehicles(w http.ResponseWriter, r *http.Request) {
 	vehicles = make([]Vehicle, 0)
 	for rows.Next() {
 		var v Vehicle
-		if err := rows.Scan(&v.ID, &v.VIN, &v.Make, &v.Model, &v.ModelYear, &v.VehicleType, &v.SalePrice, &v.DailyRate, &v.Status, &v.ImageURL, &v.Description); err != nil {
+		if err := rows.Scan(&v.ID, &v.VIN, &v.Make, &v.Model, &v.ModelYear, &v.VehicleType, &v.SalePrice, &v.DailyRate, &v.Status, &v.ImageURL, &v.Description, &v.Images, &v.VideoURL); err != nil {
 			writeError(w, http.StatusInternalServerError, "could not read inventory")
 			return
 		}
@@ -136,7 +138,7 @@ func (s *server) getVehicle(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, vehicle)
 		return
 	}
-	vehicle, err := scanVehicle(s.db.QueryRow(r.Context(), `SELECT id, vin, make, model, model_year, vehicle_type, sale_price::text, daily_rate::text, status, image_url, description FROM vehicles WHERE vin = $1`, vin))
+	vehicle, err := scanVehicle(s.db.QueryRow(r.Context(), `SELECT id, vin, make, model, model_year, vehicle_type, sale_price::text, daily_rate::text, status, image_url, description, image_urls, video_url FROM vehicles WHERE vin = $1`, vin))
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeError(w, http.StatusNotFound, "vehicle not found")
 		return
@@ -178,8 +180,8 @@ func parseSearch(values url.Values) (searchFilters, error) {
 			continue
 		}
 		parsed, err := strconv.ParseFloat(value, 64)
-		if err != nil || parsed < 0 || parsed > 1_000_000 {
-			return filters, fmt.Errorf("%s must be between 0 and 1000000", name)
+		if err != nil || parsed < 0 || parsed > 100_000_000 {
+			return filters, fmt.Errorf("%s must be between 0 and 100000000 KES", name)
 		}
 		*target = &parsed
 	}
@@ -221,7 +223,7 @@ func (s *server) writeCache(ctx context.Context, key string, value any) {
 
 func scanVehicle(row pgx.Row) (Vehicle, error) {
 	var v Vehicle
-	err := row.Scan(&v.ID, &v.VIN, &v.Make, &v.Model, &v.ModelYear, &v.VehicleType, &v.SalePrice, &v.DailyRate, &v.Status, &v.ImageURL, &v.Description)
+	err := row.Scan(&v.ID, &v.VIN, &v.Make, &v.Model, &v.ModelYear, &v.VehicleType, &v.SalePrice, &v.DailyRate, &v.Status, &v.ImageURL, &v.Description, &v.Images, &v.VideoURL)
 	return v, err
 }
 

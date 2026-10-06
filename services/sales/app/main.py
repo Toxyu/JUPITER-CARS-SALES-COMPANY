@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 
 app = FastAPI(title="Jupiter Sales Ledger", version="1.0.0")
 DATABASE_URL = os.environ["DATABASE_URL"]
-ANNUAL_APR = Decimal("0.079")
+ANNUAL_APR = Decimal("0.145")
 
 
 class CheckoutRequest(BaseModel):
@@ -157,7 +157,7 @@ def checkout(
                 connection.execute(
                     """INSERT INTO sales_contracts (sale_id, contract_number, status, terms)
                        VALUES (%s, %s, 'accepted', %s)""",
-                    (sale_id, contract_number, Jsonb({"vehicleId": str(body.vehicleId), "vin": vehicle[2], "make": vehicle[3], "model": vehicle[4], "modelYear": vehicle[5], "buyerId": user_id, "purchasePrice": str(amount), "financingTermMonths": body.financingTermMonths, "apr": str(ANNUAL_APR * 100) if body.financingTermMonths else None, "monthlyPayment": str(monthly_payment) if monthly_payment is not None else None, "accepted": body.acceptTerms})),
+                    (sale_id, contract_number, Jsonb({"vehicleId": str(body.vehicleId), "vin": vehicle[2], "make": vehicle[3], "model": vehicle[4], "modelYear": vehicle[5], "buyerId": user_id, "purchasePrice": str(amount), "currency": "KES", "financingTermMonths": body.financingTermMonths, "apr": str(ANNUAL_APR * 100) if body.financingTermMonths else None, "monthlyPayment": str(monthly_payment) if monthly_payment is not None else None, "accepted": body.acceptTerms})),
                 )
                 connection.execute(
                     "UPDATE vehicles SET status = 'sold', updated_at = now() WHERE id = %s",
@@ -169,9 +169,9 @@ def checkout(
                 )
                 connection.execute(
                     "INSERT INTO event_outbox (event_type, aggregate_id, payload) VALUES (%s, %s, %s)",
-                    ("sale.completed", sale_id, Jsonb({"saleId": str(sale_id), "contractNumber": contract_number, "vehicleId": str(body.vehicleId), "invoiceId": str(invoice_id), "userId": user_id, "amount": str(amount), "currency": "USD"})),
+                    ("sale.completed", sale_id, Jsonb({"saleId": str(sale_id), "contractNumber": contract_number, "vehicleId": str(body.vehicleId), "invoiceId": str(invoice_id), "userId": user_id, "amount": str(amount), "currency": "KES"})),
                 )
-                return CheckoutResponse(saleId=sale_id, contractNumber=contract_number, invoiceId=invoice_id, invoiceNumber=invoice_number, amount=amount, currency="USD", monthlyPayment=monthly_payment, status="completed")
+                return CheckoutResponse(saleId=sale_id, contractNumber=contract_number, invoiceId=invoice_id, invoiceNumber=invoice_number, amount=amount, currency="KES", monthlyPayment=monthly_payment, status="completed")
     except HTTPException:
         raise
     except psycopg.Error:

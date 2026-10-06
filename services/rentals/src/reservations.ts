@@ -10,7 +10,7 @@ export interface ReservationInput {
 export interface ReservationResult {
   reservationId: string;
   totalAmount: string;
-  currency: 'USD';
+  currency: 'KES';
 }
 
 export class ReservationConflictError extends Error {
@@ -59,10 +59,10 @@ export async function createReservation(pool: Pool, input: ReservationInput): Pr
     await client.query(
       `INSERT INTO event_outbox (event_type, aggregate_id, payload)
        VALUES ('vehicle.booked', $1, $2::jsonb)`,
-      [reservationId, JSON.stringify({ reservationId, vehicleId: input.vehicleId, userId: input.userId, startDate: input.startDate, endDate: input.endDate, totalAmount })],
+      [reservationId, JSON.stringify({ reservationId, vehicleId: input.vehicleId, userId: input.userId, startDate: input.startDate, endDate: input.endDate, totalAmount, currency: 'KES' })],
     );
     await client.query('COMMIT');
-    return { reservationId, totalAmount, currency: 'USD' };
+    return { reservationId, totalAmount, currency: 'KES' };
   } catch (error) {
     await client.query('ROLLBACK');
     if (isPgError(error) && error.code === '23P01') throw new ReservationConflictError();

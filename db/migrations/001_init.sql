@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS vehicles (
     daily_rate NUMERIC(10, 2) CHECK (daily_rate IS NULL OR daily_rate >= 0),
     status VARCHAR(20) NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'reserved', 'sold', 'maintenance')),
     image_url TEXT,
+    image_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+    video_url TEXT,
     description TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -26,6 +28,7 @@ CREATE TABLE IF NOT EXISTS rental_reservations (
     user_id VARCHAR(255) NOT NULL,
     booking_period DATERANGE NOT NULL,
     total_amount NUMERIC(12, 2) NOT NULL CHECK (total_amount >= 0),
+    currency CHAR(3) NOT NULL DEFAULT 'KES',
     status VARCHAR(20) NOT NULL DEFAULT 'confirmed' CHECK (status IN ('pending', 'confirmed', 'cancelled')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (NOT isempty(booking_period)),
@@ -41,6 +44,7 @@ CREATE TABLE IF NOT EXISTS sales (
     vehicle_id UUID NOT NULL UNIQUE REFERENCES vehicles(id) ON DELETE RESTRICT,
     user_id VARCHAR(255) NOT NULL,
     sale_price NUMERIC(12, 2) NOT NULL CHECK (sale_price >= 0),
+    currency CHAR(3) NOT NULL DEFAULT 'KES',
     financing_term_months SMALLINT CHECK (financing_term_months IS NULL OR financing_term_months BETWEEN 1 AND 120),
     financing_apr NUMERIC(5, 2),
     monthly_payment NUMERIC(12, 2),
@@ -64,7 +68,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     sale_id UUID NOT NULL UNIQUE REFERENCES sales(id) ON DELETE RESTRICT,
     invoice_number VARCHAR(40) NOT NULL UNIQUE,
     amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
-    currency CHAR(3) NOT NULL DEFAULT 'USD',
+    currency CHAR(3) NOT NULL DEFAULT 'KES',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -84,8 +88,9 @@ CREATE INDEX IF NOT EXISTS idx_outbox_pending ON event_outbox (next_attempt_at, 
 
 INSERT INTO vehicles (vin, make, model, model_year, vehicle_type, sale_price, daily_rate, image_url, description)
 VALUES
- ('1HGBH41JXMN109186', 'Honda', 'Accord Touring', 2024, 'sedan', 32900, 89, 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=85', 'Comfortable long-distance sedan with a quiet cabin and driver assistance.'),
- ('1FTFW1E50PFA10001', 'Ford', 'F-150 Lariat', 2023, 'truck', 58900, 149, 'https://images.unsplash.com/photo-1551830820-330a71b99659?auto=format&fit=crop&w=1200&q=85', 'Full-size pickup with a capable bed, all-weather traction, and premium interior.'),
- ('5YJ3E1EA7PF100002', 'Tesla', 'Model 3 Long Range', 2024, 'sedan', 42900, 129, 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1200&q=85', 'Electric sedan with long-range driving and a minimal, technology-led cabin.'),
- ('1GNSKCKD4PR100003', 'Chevrolet', 'Tahoe Premier', 2023, 'suv', 64900, 179, 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=85', 'Three-row SUV with generous cargo room for family trips and airport runs.')
+ ('JTDBR32E502123456', 'Toyota', 'Corolla Fielder Hybrid', 2019, 'sedan', 1850000, 5500, 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=85', 'Right-hand drive hybrid wagon, economical on Nairobi commutes and ready for a weekend upcountry.'),
+ ('JTEBU3FJ8LK123456', 'Toyota', 'Harrier Elegance', 2020, 'suv', 3850000, 14000, 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=85', 'Locally popular luxury SUV import with right-hand drive, elevated ground clearance and a refined cabin.'),
+ ('NCP16001234567890', 'Toyota', 'Probox DX', 2018, 'van', 1120000, 4500, 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=85', 'Practical right-hand drive workhorse with a spacious load area and accessible running costs.'),
+ ('JF2SJABC5KH123456', 'Subaru', 'Forester X-Break', 2019, 'suv', 2750000, 10500, 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=85', 'All-wheel-drive family SUV, right-hand drive, suited to mixed city and rural roads.'),
+ ('NT32ABC1234567890', 'Nissan', 'X-Trail 20X', 2019, 'suv', 2450000, 9000, 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=85', 'Versatile seven-seat crossover with generous luggage space for family trips.')
 ON CONFLICT (vin) DO NOTHING;

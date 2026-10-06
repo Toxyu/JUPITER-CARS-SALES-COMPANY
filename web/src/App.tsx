@@ -4,13 +4,14 @@ import type { Purpose, Vehicle } from './api';
 import { demoMode, searchVehicles } from './api';
 import { AdminDashboard } from './AdminDashboard';
 import { Checkout } from './Checkout';
+import { CIFDrawer } from './CIFDrawer';
 import { keycloak, authInitialization } from './auth';
 import { RentalBooking } from './RentalBooking';
 import { VehicleCard } from './VehicleCard';
 
 type View = 'inventory' | 'admin';
 
-const vehicleTypes = ['All vehicles', 'sedan', 'suv', 'truck', 'coupe', 'van', 'other'];
+const vehicleTypes = ['All cars', 'sedan', 'suv', 'truck', 'coupe', 'van', 'other'];
 
 export default function App() {
   const [purpose, setPurpose] = useState<Purpose>('sale');
@@ -91,6 +92,7 @@ export default function App() {
           {isAdmin && <button className={view === 'admin' ? 'nav-link nav-link--active' : 'nav-link'} onClick={() => setView('admin')}>Operations</button>}
         </nav>
         <div className="header-actions">
+          <CIFDrawer vehicles={vehicles} selectedVehicle={selected} />
           {demoMode ? <span className="preview-badge">SHOWROOM PREVIEW</span> : authReady && (keycloak.authenticated ? <button className="button button--quiet" onClick={signOut}><CircleUserRound size={17} /><span>Sign out</span></button> : <button className="button button--outline" onClick={signIn}><CircleUserRound size={17} /><span>Sign in</span></button>)}
           <button className="mobile-menu" aria-label="Open navigation" onClick={() => setView('inventory')}><Menu /></button>
         </div>
@@ -101,16 +103,16 @@ export default function App() {
         <main id="top">
           <section className="hero">
             <div className="hero__copy">
-              <span className="section-kicker"><span className="kicker-line" /> YOUR NEXT CHAPTER STARTS HERE</span>
-              <h1>Find the car<br />that <em>moves</em> you.</h1>
-              <p>Thoughtful picks, straightforward pricing, and a better way to get behind the wheel.</p>
+              <span className="section-kicker"><span className="kicker-line" /> NAIROBI, KENYA · PRICES IN KES</span>
+              <h1>Built for the<br /><em>Kenyan</em> road.</h1>
+              <p>Right-hand-drive favourites, transparent KSh pricing, and cars ready for city streets or the road upcountry.</p>
               <button className="hero__link" onClick={() => document.getElementById('inventory')?.scrollIntoView({ behavior: 'smooth' })}>Explore the collection <ArrowDown size={16} /></button>
-              <div className="hero__stats"><div><strong>04</strong><span>handpicked vehicles</span></div><span className="hero__stat-rule" /><div><strong>01</strong><span>easy place to start</span></div></div>
+              <div className="hero__stats"><div><strong>05</strong><span>Kenya-ready listings</span></div><span className="hero__stat-rule" /><div><strong>KES</strong><span>local market pricing</span></div></div>
             </div>
             <div className="hero__image-wrap">
               <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1800&q=90" alt="Dark sports coupe on a mountain road" />
               <div className="hero__image-label"><span>THE JUPITER EDIT</span><strong>Good things<br />are in motion.</strong></div>
-              <span className="hero__image-index">01 <span>/</span> 04</span>
+              <span className="hero__image-index">KE <span>/</span> 01</span>
             </div>
             <span className="hero__side-label">SALES · RENTALS · YOUR CALL</span>
           </section>
@@ -126,12 +128,12 @@ export default function App() {
             </div>
 
             <div className="filter-bar">
-              <label className="search-field"><Search size={18} /><input aria-label="Search make or model" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search make or model" /></label>
-              <div className="filter-select-wrap"><SlidersHorizontal size={16} /><select aria-label="Vehicle type" value={vehicleType} onChange={(event) => setVehicleType(event.target.value)}>{vehicleTypes.map((type) => <option key={type} value={type === 'All vehicles' ? '' : type}>{type === 'All vehicles' ? type : type[0].toUpperCase() + type.slice(1)}</option>)}</select><ChevronDown size={15} /></div>
+              <label className="search-field"><Search size={18} /><input aria-label="Search make, model, or VIN" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search make, model, or VIN" /></label>
+              <div className="filter-select-wrap"><SlidersHorizontal size={16} /><select aria-label="Vehicle type" value={vehicleType} onChange={(event) => setVehicleType(event.target.value)}>{vehicleTypes.map((type) => <option key={type} value={type === 'All cars' ? '' : type}>{type === 'All cars' ? type : type[0].toUpperCase() + type.slice(1)}</option>)}</select><ChevronDown size={15} /></div>
               <button className={`filter-toggle${filterOpen ? ' filter-toggle--active' : ''}`} onClick={() => setFilterOpen((open) => !open)}><SlidersHorizontal size={16} /><span>Price range</span></button>
               <span className="result-count">{loading ? 'Loading…' : `${vehicles.length} vehicles`}</span>
             </div>
-            {filterOpen && <div className="price-filter"><span>Price per {purpose === 'rental' ? 'day' : 'vehicle'}</span><label><span>Min</span><input inputMode="decimal" type="number" min="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="$0" /></label><span className="price-filter__dash">to</span><label><span>Max</span><input inputMode="decimal" type="number" min="0" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="No max" /></label><button className="clear-filter" onClick={() => { setMinPrice(''); setMaxPrice(''); }}>Clear</button></div>}
+            {filterOpen && <div className="price-filter"><span>Price per {purpose === 'rental' ? 'day' : 'car'} · KES</span><label><span>Min</span><input inputMode="numeric" type="number" min="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="KSh 0" /></label><span className="price-filter__dash">to</span><label><span>Max</span><input inputMode="numeric" type="number" min="0" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="No limit" /></label><button className="clear-filter" onClick={() => { setMinPrice(''); setMaxPrice(''); }}>Clear</button></div>}
 
             {error && <div className="state-message state-message--error" role="alert">{error}</div>}
             <div className="vehicle-grid">
@@ -146,7 +148,7 @@ export default function App() {
             </div>}
           </section>
         </main>
-        <footer className="site-footer"><a className="brand brand--footer" href="#top"><span className="brand__mark"><CarFront size={19} /></span><span className="brand__name">JUPITER<span>CARS</span></span></a><span>Made for wherever you're headed.</span><button onClick={() => document.getElementById('top')?.scrollIntoView({ behavior: 'smooth' })}>Back to top <ArrowRight size={14} /></button></footer>
+        <footer className="site-footer"><a className="brand brand--footer" href="#top"><span className="brand__mark"><CarFront size={19} /></span><span className="brand__name">JUPITER<span>CARS</span></span></a><span>Kenyan roads. Kenyan shillings.</span><button onClick={() => document.getElementById('top')?.scrollIntoView({ behavior: 'smooth' })}>Back to top <ArrowRight size={14} /></button></footer>
       </>}
       {authError && <div className="auth-notice" role="status"><span><Check size={14} /> You can browse without an account.</span><button aria-label="Dismiss" onClick={() => setAuthError(false)}><X size={14} /></button></div>}
     </div>
