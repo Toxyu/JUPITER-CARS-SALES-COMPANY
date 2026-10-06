@@ -1,0 +1,148 @@
+name: jupiter-cars
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-jupiter}
+      POSTGRES_USER: ${POSTGRES_USER:-jupiter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-jupiter}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm", "--http-port=8080"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8082:8080"
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8080'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+    restart: unless-stopped
+
+  inventory:
+    build: ./services/inventory
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-jupiter}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-jupiter}?sslmode=disable
+      REDIS_ADDR: redis:6379
+      PORT: "8080"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    expose: ["8080"]
+    restart: unless-stopped
+
+  rentals:
+    build: ./services/rentals
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-jupiter}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-jupiter}?sslmode=disable
+      PORT: "3001"
+      NODE_ENV: production
+      ALLOWED_ORIGIN: http://localhost:8081
+    depends_on:
+      postgres: { condition: service_healthy }
+    expose: ["3001"]
+    restart: unless-stopped
+
+  sales:
+    build: ./services/sales
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jupiter}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-jupiter}
+    depends_on:
+      postgres: { condition: service_healthy }
+    expose: ["8000"]
+    restart: unless-stopped
+
+  outbox-publisher:
+    build: ./services/events
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jupiter}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-jupiter}
+      AMQP_URL: amqp://${RABBITMQ_USER:-jupiter}:${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}@rabbitmq:5672/%2F
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost:8082}
+        VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM:-jupiter}
+        VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID:-jupiter-web}
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on:
+      - envoy
+      - keycloak
+    restart: unless-stopped
+
+  envoy:
+    image: envoyproxy/envoy:v1.31-latest
+    command: ["envoy", "-c", "/etc/envoy/envoy.yaml", "--service-cluster", "jupiter-edge"]
+    volumes:
+      - ./infra/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:9901:9901"
+    depends_on:
+      keycloak: { condition: service_healthy }
+      inventory: { condition: service_started }
+      rentals: { condition: service_started }
+      sales: { condition: service_started }
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  rabbitdata:

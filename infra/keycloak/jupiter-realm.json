@@ -1,0 +1,27 @@
+{
+  "realm": "jupiter",
+  "enabled": true,
+  "displayName": "Jupiter Cars",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "roles": { "realm": [{ "name": "admin", "description": "Jupiter Cars administrator" }] },
+  "clients": [
+    {
+      "clientId": "jupiter-web",
+      "name": "Jupiter Web",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:8081/*", "http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:8081", "http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8081/* http://localhost:5173/*"
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+name: Jupiter CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: jupiter
+          POSTGRES_USER: jupiter
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jupiter -d jupiter"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/inventory/go.mod
+          cache-dependency-path: services/inventory/go.sum
+      - name: Test inventory API
+        working-directory: services/inventory
+        run: go test ./...
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            services/rentals/package-lock.json
+      - name: Test rental API
+        working-directory: services/rentals
+        run: npm ci && npm test
+      - name: Test web app
+        working-directory: web
+        run: npm ci && npm test && npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test sales ledger
+        run: |
+          python -m pip install -r services/sales/requirements.txt
+          python -m unittest discover -s services/sales -p 'test_*.py'
+      - name: Validate PostgreSQL migration and booking constraint
+        run: |
+          docker run --rm --network host \
+            -e PGPASSWORD=ci-only-password \
+            -v "$GITHUB_WORKSPACE/db/migrations:/migrations:ro" \
+            postgres:16-alpine psql -h 127.0.0.1 -U jupiter -d jupiter -v ON_ERROR_STOP=1 -f /migrations/001_init.sql
+          docker run --rm --network host \
+            -e PGPASSWORD=ci-only-password \
+            -v "$GITHUB_WORKSPACE/db/tests:/tests:ro" \
+            postgres:16-alpine psql -h 127.0.0.1 -U jupiter -d jupiter -v ON_ERROR_STOP=1 -f /tests/booking_exclusion.sql
+      - name: Validate Compose configuration
+        run: docker compose --env-file .env.example config --quiet
