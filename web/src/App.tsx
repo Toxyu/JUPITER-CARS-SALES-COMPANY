@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowRight, CarFront, Check, ChevronDown, CircleUserRound, Menu, Search, SlidersHorizontal, X } from 'lucide-react';
-import type { Purpose, Vehicle } from './api';
-import { demoMode, searchVehicles } from './api';
+import type { Purpose, Vehicle, VehicleLocation } from './api';
+import { demoMode, fetchLocations, searchVehicles } from './api';
 import { AdminDashboard } from './AdminDashboard';
 import { Checkout } from './Checkout';
 import { CIFDrawer } from './CIFDrawer';
@@ -12,12 +12,25 @@ import { VehicleCard } from './VehicleCard';
 type View = 'inventory' | 'admin';
 
 const vehicleTypes = ['All cars', 'sedan', 'suv', 'truck', 'coupe', 'van', 'other'];
+const pageSize = 24;
 
 export default function App() {
   const [purpose, setPurpose] = useState<Purpose>('sale');
   const [vehicleType, setVehicleType] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [yearFrom, setYearFrom] = useState('');
+  const [yearTo, setYearTo] = useState('');
+  const [fuel, setFuel] = useState('');
+  const [transmission, setTransmission] = useState('');
+  const [mileageTo, setMileageTo] = useState('');
+  const [location, setLocation] = useState('');
+  const [seats, setSeats] = useState('');
+  const [engineFrom, setEngineFrom] = useState('');
+  const [sort, setSort] = useState('featured');
+  const [locations, setLocations] = useState<VehicleLocation[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [search, setSearch] = useState('');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selected, setSelected] = useState<Vehicle | null>(null);
@@ -27,7 +40,8 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const isAdmin = !demoMode && Boolean(keycloak.tokenParsed?.realm_access?.roles?.includes('admin'));
+  const staffRoles = keycloak.tokenParsed?.realm_access?.roles ?? [];
+  const isAdmin = !demoMode && staffRoles.some((role) => ['SUPER_ADMIN', 'ADMIN', 'CONTENT_MANAGER', 'SALES_MANAGER', 'RENTAL_MANAGER', 'SUPPORT', 'admin'].includes(role));
 
   useEffect(() => {
     let mounted = true;
@@ -43,6 +57,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+    void fetchLocations(controller.signal).then(setLocations).catch(() => undefined);
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
     if (view !== 'inventory') return;
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
@@ -51,11 +71,23 @@ export default function App() {
       if (vehicleType) params.set('type', vehicleType);
       if (minPrice) params.set('minPrice', minPrice);
       if (maxPrice) params.set('maxPrice', maxPrice);
+      if (yearFrom) params.set('yearFrom', yearFrom);
+      if (yearTo) params.set('yearTo', yearTo);
+      if (fuel) params.set('fuel', fuel);
+      if (transmission) params.set('transmission', transmission);
+      if (mileageTo) params.set('mileageTo', mileageTo);
+      if (location) params.set('location', location);
+      if (seats) params.set('seats', seats);
+      if (engineFrom) params.set('engineFrom', engineFrom);
+      params.set('sort', sort);
+      params.set('limit', String(pageSize));
+      params.set('offset', String(offset));
       setLoading(true);
       setError('');
-      void searchVehicles(params, controller.signal).then((items) => {
-        setVehicles(items);
-        if (selected && !items.some((vehicle) => vehicle.id === selected.id)) setSelected(null);
+      void searchVehicles(params, controller.signal).then((result) => {
+        setVehicles((current) => offset === 0 ? result.items : [...current, ...result.items]);
+        setHasMore(result.hasMore);
+        if (selected && !result.items.some((vehicle) => vehicle.id === selected.id) && offset === 0) setSelected(null);
       }).catch((reason: unknown) => {
         if (reason instanceof DOMException && reason.name === 'AbortError') return;
         setError(reason instanceof Error ? reason.message : 'Inventory could not be loaded.');
@@ -65,7 +97,7 @@ export default function App() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [purpose, vehicleType, minPrice, maxPrice, search, view]);
+  }, [purpose, vehicleType, minPrice, maxPrice, yearFrom, yearTo, fuel, transmission, mileageTo, location, seats, engineFrom, sort, offset, search, view]);
 
   function signIn(): void {
     void keycloak.login({ redirectUri: window.location.href });
@@ -78,6 +110,12 @@ export default function App() {
   function selectPurpose(nextPurpose: Purpose): void {
     setPurpose(nextPurpose);
     setSelected(null);
+    setOffset(0);
+  }
+
+  function clearFilters(): void {
+    setVehicleType(''); setMinPrice(''); setMaxPrice(''); setYearFrom(''); setYearTo(''); setFuel('');
+    setTransmission(''); setMileageTo(''); setLocation(''); setSeats(''); setEngineFrom(''); setOffset(0);
   }
 
   return (
@@ -128,12 +166,27 @@ export default function App() {
             </div>
 
             <div className="filter-bar">
-              <label className="search-field"><Search size={18} /><input aria-label="Search make, model, or VIN" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search make, model, or VIN" /></label>
-              <div className="filter-select-wrap"><SlidersHorizontal size={16} /><select aria-label="Vehicle type" value={vehicleType} onChange={(event) => setVehicleType(event.target.value)}>{vehicleTypes.map((type) => <option key={type} value={type === 'All cars' ? '' : type}>{type === 'All cars' ? type : type[0].toUpperCase() + type.slice(1)}</option>)}</select><ChevronDown size={15} /></div>
-              <button className={`filter-toggle${filterOpen ? ' filter-toggle--active' : ''}`} onClick={() => setFilterOpen((open) => !open)}><SlidersHorizontal size={16} /><span>Price range</span></button>
-              <span className="result-count">{loading ? 'Loading…' : `${vehicles.length} vehicles`}</span>
+              <label className="search-field"><Search size={18} /><input aria-label="Search make, model, or VIN" value={search} onChange={(event) => { setOffset(0); setSearch(event.target.value); }} placeholder="Search make, model, or VIN" /></label>
+              <div className="filter-select-wrap"><SlidersHorizontal size={16} /><select aria-label="Vehicle type" value={vehicleType} onChange={(event) => { setOffset(0); setVehicleType(event.target.value); }}>{vehicleTypes.map((type) => <option key={type} value={type === 'All cars' ? '' : type}>{type === 'All cars' ? type : type[0].toUpperCase() + type.slice(1)}</option>)}</select><ChevronDown size={15} /></div>
+              <div className="filter-select-wrap"><select aria-label="Sort vehicles" value={sort} onChange={(event) => { setOffset(0); setSort(event.target.value); }}><option value="featured">Featured</option><option value="newest">Newest</option><option value="price_low">Price: low to high</option><option value="price_high">Price: high to low</option><option value="year_new">Year: newest</option><option value="mileage_low">Mileage: lowest</option></select><ChevronDown size={15} /></div>
+              <button className={`filter-toggle${filterOpen ? ' filter-toggle--active' : ''}`} onClick={() => setFilterOpen((open) => !open)}><SlidersHorizontal size={16} /><span>Filters</span></button>
+              <span className="result-count">{loading ? 'Loading…' : `${vehicles.length}${hasMore ? '+' : ''} vehicles`}</span>
             </div>
-            {filterOpen && <div className="price-filter"><span>Price per {purpose === 'rental' ? 'day' : 'car'} · KES</span><label><span>Min</span><input inputMode="numeric" type="number" min="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="KSh 0" /></label><span className="price-filter__dash">to</span><label><span>Max</span><input inputMode="numeric" type="number" min="0" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="No limit" /></label><button className="clear-filter" onClick={() => { setMinPrice(''); setMaxPrice(''); }}>Clear</button></div>}
+            {filterOpen && <div className="market-filter-panel">
+              <div className="market-filter-panel__heading"><span>Refine the search</span><button className="clear-filter" onClick={clearFilters}>Clear all</button></div>
+              <div className="market-filter-grid">
+                <label>Minimum · KES<input inputMode="numeric" type="number" min="0" value={minPrice} onChange={(event) => { setOffset(0); setMinPrice(event.target.value); }} placeholder="0" /></label>
+                <label>Maximum · KES<input inputMode="numeric" type="number" min="0" value={maxPrice} onChange={(event) => { setOffset(0); setMaxPrice(event.target.value); }} placeholder="No limit" /></label>
+                <label>Year from<input type="number" min="1886" max="2100" value={yearFrom} onChange={(event) => { setOffset(0); setYearFrom(event.target.value); }} placeholder="Any" /></label>
+                <label>Year to<input type="number" min="1886" max="2100" value={yearTo} onChange={(event) => { setOffset(0); setYearTo(event.target.value); }} placeholder="Any" /></label>
+                <label>Fuel<select value={fuel} onChange={(event) => { setOffset(0); setFuel(event.target.value); }}><option value="">Any fuel</option>{['petrol', 'diesel', 'hybrid', 'electric'].map((item) => <option key={item}>{item}</option>)}</select></label>
+                <label>Transmission<select value={transmission} onChange={(event) => { setOffset(0); setTransmission(event.target.value); }}><option value="">Any transmission</option><option value="automatic">Automatic</option><option value="manual">Manual</option></select></label>
+                <label>Location<select value={location} onChange={(event) => { setOffset(0); setLocation(event.target.value); }}><option value="">All locations</option>{locations.map((item) => <option value={item.slug} key={item.slug}>{item.name} · {item.county}</option>)}</select></label>
+                <label>Minimum seats<input type="number" min="1" max="80" value={seats} onChange={(event) => { setOffset(0); setSeats(event.target.value); }} placeholder="Any" /></label>
+                <label>Maximum mileage · km<input type="number" min="0" value={mileageTo} onChange={(event) => { setOffset(0); setMileageTo(event.target.value); }} placeholder="Any" /></label>
+                <label>Engine from · cc<input type="number" min="0" value={engineFrom} onChange={(event) => { setOffset(0); setEngineFrom(event.target.value); }} placeholder="Any" /></label>
+              </div>
+            </div>}
 
             {error && <div className="state-message state-message--error" role="alert">{error}</div>}
             <div className="vehicle-grid">
@@ -141,6 +194,7 @@ export default function App() {
               {!loading && !error && vehicles.length === 0 && <div className="state-message">No vehicles match those filters. Try widening your search.</div>}
               {vehicles.map((vehicle, index) => <div className="vehicle-grid__item" style={{ animationDelay: `${index * 70}ms` }} key={vehicle.id}><VehicleCard vehicle={vehicle} purpose={purpose} selected={selected?.id === vehicle.id} onSelect={setSelected} /></div>)}
             </div>
+            {hasMore && <div className="load-more-row"><button className="button button--outline" disabled={loading} onClick={() => setOffset((current) => current + pageSize)}>{loading ? 'Loading…' : 'Load more vehicles'}</button></div>}
 
             {selected && <div className="vehicle-action" id="vehicle-action">
               <div className="vehicle-action__intro"><button className="icon-button" aria-label="Close vehicle details" onClick={() => setSelected(null)}><X size={18} /></button><span className="section-kicker">A CLOSER LOOK</span><h3>{selected.make} <em>{selected.model}</em></h3><p>{selected.description}</p></div>

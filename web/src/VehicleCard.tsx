@@ -1,6 +1,6 @@
-import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, CarFront, Rotate3D, Video, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, CarFront, Fuel, Gauge, MapPin, Rotate3D, Settings2, Video, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { formatKES, type Purpose, type Vehicle } from './api';
+import { demoMode, formatKES, type Purpose, type Vehicle } from './api';
 import { InspectionSheetButton } from './InspectionSheetButton';
 
 interface VehicleCardProps {
@@ -51,7 +51,7 @@ export function VehicleCard({ vehicle, purpose, selected, onSelect }: VehicleCar
     <>
     <article className={`vehicle-card${selected ? ' vehicle-card--selected' : ''}`} onPointerMove={handlePointerMove} onPointerLeave={(event) => { event.currentTarget.style.setProperty('--tilt-x', '0deg'); event.currentTarget.style.setProperty('--tilt-y', '0deg'); }}>
       <div className="vehicle-card__image" onPointerDown={(event) => { pointerStart.current = event.clientX; }} onPointerUp={finishSwipe} onPointerCancel={() => { pointerStart.current = null; }}>
-        {images.length ? <img src={images[imageIndex]} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}, exterior view ${imageIndex + 1}`} loading="lazy" draggable="false" /> : <CarFront aria-hidden="true" />}
+        {images.length ? <img src={images[imageIndex]} alt={demoMode ? `Representative exterior photo ${imageIndex + 1}` : `${vehicle.year} ${vehicle.make} ${vehicle.model}, exterior view ${imageIndex + 1}`} loading="lazy" draggable="false" /> : <CarFront aria-hidden="true" />}
         <span className="vehicle-card__type">{vehicle.type}</span>
         <button className="vehicle-card__arrow" onClick={() => onSelect(vehicle)} aria-label={`View ${vehicle.make} ${vehicle.model} details`}><ArrowUpRight size={17} aria-hidden="true" /></button>
         {images.length > 1 && <>
@@ -64,6 +64,12 @@ export function VehicleCard({ vehicle, purpose, selected, onSelect }: VehicleCar
         <div className="vehicle-card__eyebrow"><span>{vehicle.year}</span><span className="dot-separator" />{purpose === 'rental' ? <><CalendarDays size={13} /> Flexible dates</> : 'Available now'}</div>
         <h3>{vehicle.make} <span>{vehicle.model}</span></h3>
         <p className="vehicle-card__description">{vehicle.description}</p>
+        <div className="vehicle-card__specs" aria-label="Vehicle specifications">
+          {vehicle.transmission && <span><Settings2 size={12} />{vehicle.transmission}</span>}
+          {vehicle.fuelType && <span><Fuel size={12} />{vehicle.fuelType}</span>}
+          {vehicle.mileageKm !== null && vehicle.mileageKm !== undefined && <span><Gauge size={12} />{vehicle.mileageKm.toLocaleString('en-KE')} km</span>}
+          {vehicle.location && <span><MapPin size={12} />{vehicle.location}</span>}
+        </div>
         <div className="vehicle-card__footer">
           <p className="vehicle-card__price">{formatKES(Number(price ?? 0))}<span>{purpose === 'rental' ? ' / day' : ' asking'}</span></p>
           <div className="vehicle-card__actions">

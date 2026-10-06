@@ -27,7 +27,7 @@ The durable topic exchange is `jupiter.events`, with routing keys and queues for
 
 Requirements: Docker Compose v2. Copy `.env.example` to `.env`, replace the development secrets, then run `docker compose up --build`. The web app is served at `http://localhost:8081`; Envoy exposes APIs at `http://localhost:8080`; Keycloak is at `http://localhost:8082`.
 
-All vehicle prices, rental rates, reservations, sales, and invoices use Kenyan shillings (KES). The seed catalog focuses on Toyota with Subaru and Nissan listings. New databases apply both SQL migrations during initialization; existing databases need `db/migrations/002_kenyan_market.sql` applied once to retire the former sample stock and add the KES market rows.
+All vehicle prices, rental rates, reservations, sales, and invoices use Kenyan shillings (KES). The seed catalog focuses on Toyota with Subaru and Nissan listings. New databases apply all SQL migrations during initialization; existing databases should apply `002_kenyan_market.sql` and `003_admin_catalog.sql` in order to migrate old sample stock, add KES market rows, and create the normalized admin catalog tables.
 
 Keycloak imports the development realm in `infra/keycloak/jupiter-realm.json`; registration is enabled and browser authentication uses OAuth2 authorization-code flow with PKCE. Assign the `admin` realm role in the Keycloak console to enable the operations dashboard. Replace all `CHANGE_ME` values, configure a stable public issuer and TLS at the edge, and use managed secrets, storage, backups, and key rotation before production deployment. Compose uses Keycloak development mode and is a local integration environment, not a production deployment topology.
 
@@ -38,11 +38,18 @@ Keycloak imports the development realm in `infra/keycloak/jupiter-realm.json`; r
 - `GET /api/v1/rentals/availability?vehicleId=&startDate=&endDate=`
 - `POST /api/v1/rentals/reserve` (JWT required)
 - `POST /api/v1/sales/checkout` (JWT required)
+- `GET /api/v1/locations`
+- `GET/POST /api/v1/admin/vehicles` (staff JWT role required)
+- `PUT/DELETE /api/v1/admin/vehicles/{id}` (staff JWT role required; DELETE archives)
+- `PATCH /api/v1/admin/vehicles/{id}/publish` (content-management role required)
+- `GET /api/v1/admin/locations` (staff JWT role required)
 - `GET /health` (liveness)
 
 Reserve body: `{"vehicleId":"<uuid>","startDate":"2026-10-08","endDate":"2026-10-11"}`. The end date is exclusive and the server calculates the KES amount from the stored daily rate. Checkout requires an `Idempotency-Key` header.
 
 Sales checkout persists an accepted contract, sale, vehicle status change, invoice, and outbox event atomically. It does not capture payment; connect a payment provider and complete its authorization/capture workflow before accepting real purchases.
+
+The admin vehicle editor supports draft/published state, feature flags, KES sale/hire rates, database-backed locations, specifications, features, and ordered HTTPS media URLs. It records audit/outbox entries transactionally. Upload bytes currently require a configured object-storage presign adapter; the editor intentionally accepts HTTPS media URLs instead of pretending local file selections are durable uploads.
 
 ## Verification
 

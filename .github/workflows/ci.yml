@@ -71,6 +71,10 @@ jobs:
             postgres:16-alpine psql -h 127.0.0.1 -U jupiter -d jupiter -v ON_ERROR_STOP=1 -f /migrations/002_kenyan_market.sql
           docker run --rm --network host \
             -e PGPASSWORD=ci-only-password \
+            -v "$GITHUB_WORKSPACE/db/migrations:/migrations:ro" \
+            postgres:16-alpine psql -h 127.0.0.1 -U jupiter -d jupiter -v ON_ERROR_STOP=1 -f /migrations/003_admin_catalog.sql
+          docker run --rm --network host \
+            -e PGPASSWORD=ci-only-password \
             -v "$GITHUB_WORKSPACE/db/tests:/tests:ro" \
             postgres:16-alpine psql -h 127.0.0.1 -U jupiter -d jupiter -v ON_ERROR_STOP=1 -f /tests/booking_exclusion.sql
       - name: Validate Compose configuration

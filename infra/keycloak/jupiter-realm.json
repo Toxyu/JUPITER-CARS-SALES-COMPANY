@@ -5,7 +5,17 @@
   "registrationAllowed": true,
   "loginWithEmailAllowed": true,
   "resetPasswordAllowed": true,
-  "roles": { "realm": [{ "name": "admin", "description": "Jupiter Cars administrator" }] },
+  "roles": {
+    "realm": [
+      { "name": "SUPER_ADMIN", "description": "Full platform administration" },
+      { "name": "ADMIN", "description": "Platform administration" },
+      { "name": "CONTENT_MANAGER", "description": "Vehicle and media publishing" },
+      { "name": "SALES_MANAGER", "description": "Vehicle sales and leads" },
+      { "name": "RENTAL_MANAGER", "description": "Hire fleet and bookings" },
+      { "name": "SUPPORT", "description": "Customer support and enquiries" },
+      { "name": "admin", "description": "Jupiter Cars administrator" }
+    ]
+  },
   "clients": [
     {
       "clientId": "jupiter-web",

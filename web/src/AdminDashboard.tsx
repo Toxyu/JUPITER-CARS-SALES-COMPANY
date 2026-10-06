@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Activity, CarFront, CircleDollarSign, RefreshCw, TicketCheck } from 'lucide-react';
 import type Keycloak from 'keycloak-js';
 import { apiBase, formatKES } from './api';
+import { AdminVehicles } from './AdminVehicles';
 
 interface Summary {
   vehicles: number;
@@ -14,6 +15,7 @@ interface Summary {
 interface AdminDashboardProps { auth: Keycloak }
 
 export function AdminDashboard({ auth }: AdminDashboardProps) {
+  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles'>('overview');
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,8 @@ export function AdminDashboard({ auth }: AdminDashboardProps) {
   return (
     <section className="admin-view">
       <div className="admin-view__heading"><div><span className="section-kicker">OPERATIONS</span><h1>Dashboard</h1></div><span className="live-indicator"><span /> Live metrics</span></div>
-      {loading ? <div className="loading-state"><RefreshCw className="spin" /> Loading operational data</div> : error ? <p className="inline-message inline-message--error" role="alert">{error}</p> : summary && <div className="metrics-grid">
+      <nav className="admin-tabs" aria-label="Admin sections"><button className={activeTab === 'overview' ? 'admin-tab is-active' : 'admin-tab'} onClick={() => setActiveTab('overview')}>Overview</button><button className={activeTab === 'vehicles' ? 'admin-tab is-active' : 'admin-tab'} onClick={() => setActiveTab('vehicles')}>Vehicles</button></nav>
+      {activeTab === 'vehicles' ? <AdminVehicles auth={auth} /> : loading ? <div className="loading-state"><RefreshCw className="spin" /> Loading operational data</div> : error ? <p className="inline-message inline-message--error" role="alert">{error}</p> : summary && <div className="metrics-grid">
         <article className="metric-card"><span>Fleet vehicles</span><CarFront /><strong>{summary.vehicles}</strong><small>{summary.available} available now</small></article>
         <article className="metric-card"><span>Active reservations</span><TicketCheck /><strong>{summary.reservations}</strong><small>Confirmed bookings</small></article>
         <article className="metric-card"><span>Completed sales</span><Activity /><strong>{summary.sales}</strong><small>Recorded in ledger</small></article>

@@ -20,15 +20,21 @@ static_resources:
                         allow_origin_string_match:
                           - exact: http://localhost:8081
                           - exact: http://localhost:5173
-                        allow_methods: GET, POST, OPTIONS
+                        allow_methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
                         allow_headers: authorization,content-type,idempotency-key
                         expose_headers: x-cache
                         max_age: "3600"
                       routes:
                         - match: { prefix: /api/v1/vehicles/ }
                           route: { cluster: inventory, timeout: 10s }
+                        - match: { path: /api/v1/locations }
+                          route: { cluster: inventory, timeout: 5s }
                         - match: { prefix: /api/v1/rentals/ }
                           route: { cluster: rentals, timeout: 15s }
+                        - match: { prefix: /api/v1/admin/vehicles }
+                          route: { cluster: inventory, timeout: 15s }
+                        - match: { path: /api/v1/admin/locations }
+                          route: { cluster: inventory, timeout: 5s }
                         - match: { prefix: /api/v1/admin/ }
                           route: { cluster: sales, timeout: 15s }
                         - match: { prefix: /api/v1/sales/ }

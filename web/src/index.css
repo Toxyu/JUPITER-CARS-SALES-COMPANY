@@ -184,6 +184,76 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .media-modal { padding: 10px; }
   .media-modal__dialog { padding: 15px; }
 }
+
+.admin-tabs { display: flex; gap: 22px; margin: 24px 0; border-bottom: 1px solid var(--line); }
+.admin-tab { position: relative; padding: 0 2px 12px; border: 0; background: transparent; color: #94a3b8; font-size: 12px; cursor: pointer; }
+.admin-tab.is-active { color: #f8fafc; }
+.admin-tab.is-active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: #3b82f6; box-shadow: 0 0 10px rgb(59 130 246 / 50%); content: ''; }
+.admin-vehicles { min-width: 0; }
+.admin-vehicles__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 16px 0 20px; }
+.admin-vehicles__header h2 { margin: 6px 0; color: #f8fafc; font: 600 20px Orbitron, sans-serif; }
+.admin-vehicles__header p { margin: 0; color: #94a3b8; font-size: 10px; }
+.admin-search { display: flex; align-items: center; gap: 9px; max-width: 420px; height: 42px; margin-bottom: 16px; padding: 0 12px; border: 1px solid var(--line); background: #0f172a; color: #94a3b8; }
+.admin-search input { width: 100%; border: 0; outline: 0; background: transparent; color: #e5e7eb; font: 12px Inter, sans-serif; }
+.admin-table-wrap { overflow-x: auto; border: 1px solid var(--line); background: rgb(15 23 42 / 70%); }
+.admin-vehicle-table { width: 100%; min-width: 900px; border-collapse: collapse; text-align: left; font-size: 11px; }
+.admin-vehicle-table th { padding: 13px 12px; border-bottom: 1px solid var(--line); background: #0b1220; color: #94a3b8; font-size: 9px; font-weight: 600; text-transform: uppercase; }
+.admin-vehicle-table td { padding: 12px; border-bottom: 1px solid rgb(255 255 255 / 6%); color: #cbd5e1; }
+.admin-vehicle-table tbody tr:hover { background: rgb(59 130 246 / 5%); }
+.admin-vehicle-table td strong, .admin-vehicle-table td small { display: block; }
+.admin-vehicle-table td strong { color: #f1f5f9; font-size: 11px; }
+.admin-vehicle-table td small { margin-top: 4px; color: #64748b; font: 9px monospace; }
+.admin-row-actions { display: flex; gap: 5px; }
+.admin-row-actions .icon-button, .admin-pagination .icon-button { width: 31px; height: 31px; background: #0b1220; border-color: var(--line); color: #cbd5e1; }
+.admin-row-actions .icon-button:hover:not(:disabled), .admin-pagination .icon-button:hover:not(:disabled) { border-color: rgb(59 130 246 / 55%); color: #93c5fd; }
+.admin-state { padding: 4px 7px; border: 1px solid var(--line); color: #cbd5e1; font-size: 9px; text-transform: capitalize; }
+.admin-state--available { border-color: rgb(74 222 128 / 25%); color: #86efac; }
+.admin-state--sold, .admin-state--maintenance { border-color: rgb(168 85 247 / 25%); color: #d8b4fe; }
+.admin-table-empty { height: 120px; text-align: center; color: #94a3b8 !important; }
+.admin-table-empty svg { vertical-align: middle; margin-right: 8px; }
+.admin-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 9px; margin-top: 12px; color: #94a3b8; font-size: 10px; }
+.admin-pagination .icon-button:disabled { opacity: .4; cursor: default; }
+.admin-form-layer { position: fixed; inset: 0; z-index: 35; display: flex; justify-content: flex-end; background: rgb(1 4 10 / 75%); backdrop-filter: blur(5px); }
+.admin-vehicle-form { display: flex; flex-direction: column; width: min(720px, 100%); height: 100%; overflow: hidden; border-left: 1px solid var(--line); background: #0b1220; box-shadow: -20px 0 70px rgb(0 0 0 / 45%); animation: drawer-enter .25s ease-out both; }
+.admin-vehicle-form__header { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 20px 23px; border-bottom: 1px solid var(--line); }
+.admin-vehicle-form__header h3 { margin: 6px 0 0; color: #f8fafc; font: 600 17px Orbitron, sans-serif; }
+.admin-listing-preview { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 7px 14px; align-items: center; margin: 15px 23px 0; padding: 11px; border: 1px solid rgb(59 130 246 / 24%); background: rgb(59 130 246 / 5%); }
+.admin-listing-preview > .section-kicker { grid-column: 1 / -1; }
+.admin-listing-preview > img { width: 120px; height: 70px; object-fit: cover; background: #0f172a; }
+.admin-listing-preview > div { display: grid; gap: 6px; min-width: 0; }
+.admin-listing-preview strong { color: #f8fafc; font-size: 11px; }
+.admin-listing-preview span:last-child { color: #94a3b8; font-size: 10px; }
+.admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; overflow-y: auto; padding: 20px 23px; }
+.admin-form-grid > label { display: grid; gap: 6px; color: #cbd5e1; font-size: 10px; }
+.admin-form-grid input, .admin-form-grid select, .admin-form-grid textarea { width: 100%; min-width: 0; min-height: 39px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 0; background: #0f172a; color: #e5e7eb; font: 11px Inter, sans-serif; }
+.admin-form-grid textarea { resize: vertical; }
+.admin-form-wide { grid-column: 1 / -1; }
+.admin-form-toggles { display: flex; gap: 20px; padding: 0 23px 16px; color: #cbd5e1; font-size: 11px; }
+.admin-form-toggles label { display: inline-flex; align-items: center; gap: 8px; }
+.admin-form-toggles input { accent-color: #3b82f6; }
+.admin-vehicle-form > .inline-message { margin: 0 23px 12px; }
+.admin-vehicle-form__footer { display: flex; justify-content: flex-end; gap: 9px; padding: 15px 23px; border-top: 1px solid var(--line); background: #080c14; }
+.market-filter-panel { padding: 16px; border-bottom: 1px solid var(--line); background: #0b1220; animation: showroom-arrive .2s ease-out both; }
+.market-filter-panel__heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: #e5e7eb; font-size: 11px; font-weight: 600; }
+.market-filter-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.market-filter-grid label { display: grid; align-content: start; gap: 6px; min-width: 0; color: #94a3b8; font-size: 9px; }
+.market-filter-grid input, .market-filter-grid select { width: 100%; min-width: 0; height: 36px; padding: 0 8px; border: 1px solid var(--line); border-radius: 0; background: #0f172a; color: #e5e7eb; font: 10px Inter, sans-serif; }
+.load-more-row { display: flex; justify-content: center; padding-top: 24px; }
+.load-more-row .button--outline { border-color: rgb(59 130 246 / 40%); color: #bfdbfe; }
+
+@media (max-width: 700px) {
+  .admin-vehicles__header { align-items: flex-start; flex-direction: column; }
+  .admin-form-grid { gap: 10px; padding: 15px; }
+  .admin-vehicle-form__header, .admin-vehicle-form__footer { padding-inline: 15px; }
+  .admin-listing-preview { margin-inline: 15px; }
+  .admin-form-toggles { padding-inline: 15px; }
+  .admin-vehicle-form > .inline-message { margin-inline: 15px; }
+  .market-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .market-filter-panel { padding: 12px 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-vehicle-form { animation: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .cif-drawer { animation: none; }
 }
@@ -303,6 +373,9 @@ a { color: inherit; text-decoration: none; }
 .vehicle-card h3 { margin: 8px 0 7px; font: 700 17px 'Manrope', sans-serif; }
 .vehicle-card h3 span { font-weight: 500; }
 .vehicle-card__description { margin: 0; min-height: 36px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.vehicle-card__specs { display: flex; flex-wrap: wrap; gap: 7px 12px; min-height: 19px; margin-top: 12px; }
+.vehicle-card__specs span { display: inline-flex; align-items: center; gap: 5px; color: #aab5c5; font-size: 9px; text-transform: capitalize; }
+.vehicle-card__specs svg { color: #60a5fa; }
 .vehicle-card__footer { display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-top: 18px; padding-top: 12px; border-top: 1px solid #edf0ed; }
 .vehicle-card__price { margin: 0; font: 700 18px 'Manrope', sans-serif; white-space: nowrap; }
 .vehicle-card__price span { color: var(--muted); font: 400 10px 'DM Sans', sans-serif; }
